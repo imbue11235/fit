@@ -49,7 +49,7 @@ func OnlyAllowUsersWithName(username string) fit.ResponseHandler {
 func main() {
 	router := fit.NewRouter()
 
-	router.Logger(fit.DefaultLogger())
+	router.Logger = fit.DefaultLogger()
 
 	// http://localhost:<portString>/user/trump to view intended page
 	// http://localhost:<portString>/user/somerandomname to view the middleware in effect
