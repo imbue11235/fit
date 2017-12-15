@@ -14,14 +14,16 @@ const (
 )
 
 type Router struct {
-	res             *resource
-	logger          ResponseHandler
+	res *resource
+
+	NotFound        ResponseHandler
+	Logger          ResponseHandler
 	IgnoreFavicon   bool
 	RedirectSlashes bool
 }
 
 func NewRouter() *Router {
-	return &Router{newResource(), nil, true, true}
+	return &Router{newResource(), notFoundHandler(), nil, true, true}
 }
 
 // Serve ....
@@ -39,14 +41,20 @@ func (r *Router) Serve(port ...int) {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
-		found, handlers, params := r.findRoute(rq.URL.Path, rq.Method)
+		path := rq.URL.Path
+		found, handlers, params := r.findRoute(path, rq.Method)
 
 		c := newContext()
 		c.writer = w
 		c.request = rq
 
+		// Handle trailing slash paths. Rename variables?
+		wildcardPath := path
+		if wildcardPath[len(wildcardPath)-1] == slash {
+			wildcardPath = wildcardPath[:len(wildcardPath)-1]
+		}
+
 		if found && len(handlers) > 0 {
-			// CREATE THIS SOMEWHERE ELSE
 
 			c.params = Params{params}
 			c.handlers = handlers
@@ -54,21 +62,25 @@ func (r *Router) Serve(port ...int) {
 			c.maxHandlers = len(handlers)
 
 			c.callByIndex(0)
+		} else if found, _, _ := r.findRoute(wildcardPath, rq.Method); found && r.RedirectSlashes {
+			c.status = http.StatusMovedPermanently
+			http.Redirect(w, rq, wildcardPath, c.status)
 		} else {
 			c.status = http.StatusNotFound
 			// Error handler here
-			fmt.Fprintln(w, "Does not exist. Should return appropriate status 404")
+			if r.NotFound == nil {
+				fmt.Fprintln(w, "Requested page was not found")
+			} else {
+				r.NotFound(c)
+			}
 
 		}
-		r.logger(c)
+
+		r.Logger(c)
 
 	})
 
 	log.Fatal(http.ListenAndServe(portString, nil))
-}
-
-func (r *Router) Logger(handler ResponseHandler) {
-	r.logger = handler
 }
 
 func (r *Router) addRoute(path string, methods []string, handlers ...ResponseHandler) *Options {
