@@ -88,7 +88,7 @@ func main() {
 
 	router.Get("/test/route/:id", func(c *fit.Context) {
 		_, value := c.Parameters().GetByName("id")
-		c.JSON(Response{fmt.Sprintf("Id is %s", value)})
+		c.JSON(Response{fmt.Sprintf("Id is %s and apikey is %s", value, c.Request().FormValue("apikey"))})
 	})
 
 	router.Get("/test/route-test/*something", func(c *fit.Context) {

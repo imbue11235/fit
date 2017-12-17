@@ -19,12 +19,12 @@ func HandlerTest1(t *testing.T) ResponseHandler {
 		c.Shared().Set("teststring", "Some string value")
 		c.Shared().Set("testinteger", 5325)
 
-		if c.shared["teststring"] != "Some string value" {
-			t.Errorf("Shared value did not get set, expected '%s', got '%s'.", "Some string value", c.shared["teststring"])
+		if _, val := c.Shared().Get("teststring"); val != "Some string value" {
+			t.Errorf("Shared value did not get set, expected '%s', got '%s'.", "Some string value", val)
 		}
 
-		if c.shared["testinteger"] != 5325 {
-			t.Errorf("Shared value did not get set, expected '%d', got '%d'.", 5325, c.shared["testinteger"])
+		if _, val := c.Shared().Get("testinteger"); val != 5325 {
+			t.Errorf("Shared value did not get set, expected '%d', got '%d'.", 5325, val)
 		}
 
 		c.Next()

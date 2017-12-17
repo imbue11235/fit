@@ -1,19 +1,19 @@
 package fit
 
 type Shared struct {
-	context *Context
+	values map[string]interface{}
 }
 
 func (c *Context) Shared() Shared {
-	if c.shared == nil {
-		c.shared = make(map[string]interface{})
+	if c.shared.values == nil {
+		c.shared = Shared{make(map[string]interface{})}
 	}
 
-	return Shared{c}
+	return c.shared
 }
 
 func (s Shared) Get(key string) (bool, interface{}) {
-	if k, ok := s.context.shared[key]; ok {
+	if k, ok := s.values[key]; ok {
 		return true, k
 	}
 
@@ -21,5 +21,5 @@ func (s Shared) Get(key string) (bool, interface{}) {
 }
 
 func (s Shared) Set(key string, value interface{}) {
-	s.context.shared[key] = value
+	s.values[key] = value
 }

@@ -23,7 +23,7 @@ type Context struct {
 
 	// Shared
 
-	shared map[string]interface{}
+	shared Shared
 }
 
 type ResponseHandler func(c *Context)
