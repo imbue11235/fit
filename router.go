@@ -47,8 +47,7 @@ func (r *Router) request(w http.ResponseWriter, rq *http.Request) {
 	found, handlers, params := r.findRoute(path, rq.Method)
 
 	c := newContext()
-	c.writer = w
-	c.request = rq
+	c.writer, c.request = w, rq
 
 	// Handle trailing slash paths. Rename variables?
 	wildcardPath := path
@@ -58,10 +57,7 @@ func (r *Router) request(w http.ResponseWriter, rq *http.Request) {
 
 	if found && len(handlers) > 0 {
 
-		c.params = Params{params}
-		c.handlers = handlers
-		c.currentHandler = 0
-		c.maxHandlers = len(handlers)
+		c.params, c.handlers, c.currentHandler, c.maxHandlers = Params{params}, handlers, 0, len(handlers)
 
 		c.callByIndex(0)
 	} else if found, handler, _ := r.findRoute(wildcardPath, rq.Method); found && r.RedirectSlashes && handler != nil {
