@@ -4,6 +4,9 @@ import (
 	fit "fit_router"
 	"fmt"
 	"net/http"
+	"strings"
+
+	"github.com/fatih/color"
 )
 
 type Message struct {
@@ -18,6 +21,33 @@ type Response struct {
 
 type ErrorMessage struct {
 	Message string `json:"message"`
+}
+
+func DefaultLogger() fit.ResponseHandler {
+
+	return func(c *fit.Context) {
+		statusColor, status := color.BgGreen, c.Status()
+
+		if status == http.StatusNotFound {
+			statusColor = color.BgYellow
+		} else if status != http.StatusOK {
+			statusColor = color.BgRed
+		}
+
+		col := color.New(statusColor)
+		col.Printf("  %d  ", status)
+
+		spacing, statusText := 20, http.StatusText(status)
+		restSpace := (spacing - len(statusText)) / 2
+		spacingString := strings.Repeat(" ", restSpace)
+
+		var preSpacing string
+		if len(statusText)%2 != 0 {
+			preSpacing = " "
+		}
+		fmt.Printf(" %s%s%s | %s \n", preSpacing+spacingString, statusText, spacingString, c.Request().URL.Path)
+	}
+
 }
 
 // User - Example endpoint function
@@ -49,7 +79,7 @@ func OnlyAllowUsersWithName(username string) fit.ResponseHandler {
 func main() {
 	router := fit.NewRouter()
 
-	router.Logger = fit.DefaultLogger()
+	router.Logger = DefaultLogger()
 
 	// http://localhost:<portString>/user/trump to view intended page
 	// http://localhost:<portString>/user/somerandomname to view the middleware in effect
