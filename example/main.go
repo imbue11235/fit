@@ -56,5 +56,15 @@ func main() {
 	router.Get("/", nil)
 	router.Get("/user/:username/sa/:test", OnlyAllowUsersWithName("trump"), User).Where("username", "^[a-z]*$")
 
+	router.Get("/test/route/:id", func(c *fit.Context) {
+		_, value := c.Parameters().GetByName("id")
+		c.JSON(Response{fmt.Sprintf("Id is %s", value)})
+	})
+
+	router.Get("/test/route-test/*something", func(c *fit.Context) {
+		_, value := c.Parameters().GetByName("something")
+		c.JSON(Response{fmt.Sprintf("Something is %s", value)})
+	})
+
 	router.Serve(4000)
 }
