@@ -2,6 +2,7 @@ package fit
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 )
 
@@ -61,5 +62,14 @@ func printResource(res *resource, amount int, pre bool) {
 		if len(r.children) > 0 {
 			printResource(r, amount+1, total != i+1)
 		}
+	}
+}
+
+func notFoundHandler() ResponseHandler {
+
+	return func(c *Context) {
+		response := make(map[string]string)
+		response["message"] = "The URL you requested was not found."
+		c.JSON(response, http.StatusNotFound)
 	}
 }
