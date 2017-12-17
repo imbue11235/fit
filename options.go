@@ -11,19 +11,6 @@ type Options struct {
 	path  string
 }
 
-// Name - Sets name of the route
-func (r *Options) Name(name string) *Options {
-	r.name = name
-	return r
-}
-
-// Middleware ...
-/*
-func (r *Options) Middleware(middleware ...ContextFunc) {
-	r.middleware = append(r.middleware, middleware...)
-}
-*/
-
 // Where ...
 func (r *Options) Where(constraints ...string) *Options {
 	regex, constraintLength := r.regex, len(constraints)

@@ -13,20 +13,20 @@ const (
 	slash = byte('/')
 )
 
+// Router ...
 type Router struct {
 	res *resource
 
 	NotFound        ResponseHandler
 	Logger          ResponseHandler
-	IgnoreFavicon   bool
 	RedirectSlashes bool
 }
 
 func NewRouter() *Router {
-	return &Router{newResource(), notFoundHandler(), nil, true, true}
+	return &Router{newResource(), notFoundHandler(), nil, true}
 }
 
-// Serve ....
+// Serve ..
 func (r *Router) Serve(port ...int) {
 	// Default port
 	portString := ":8080"
@@ -34,53 +34,53 @@ func (r *Router) Serve(port ...int) {
 		portString = fmt.Sprintf(":%d", port[0])
 	}
 
-	if r.IgnoreFavicon {
-		// Do ignore requests to the favicon. Not really needed in Rest API's.
-		// I've added the option to choose to ignore it or not. Default is ignoring.
-		http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, rq *http.Request) {}) // Ignore favicon
-	}
+	fmt.Printf("Now serving on localhost%s\n", portString)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
-		path := rq.URL.Path
-		found, handlers, params := r.findRoute(path, rq.Method)
-
-		c := newContext()
-		c.writer = w
-		c.request = rq
-
-		// Handle trailing slash paths. Rename variables?
-		wildcardPath := path
-		if wildcardPath[len(wildcardPath)-1] == slash {
-			wildcardPath = wildcardPath[:len(wildcardPath)-1]
-		}
-
-		if found && len(handlers) > 0 {
-
-			c.params = Params{params}
-			c.handlers = handlers
-			c.currentHandler = 0
-			c.maxHandlers = len(handlers)
-
-			c.callByIndex(0)
-		} else if found, _, _ := r.findRoute(wildcardPath, rq.Method); found && r.RedirectSlashes {
-			c.status = http.StatusMovedPermanently
-			http.Redirect(w, rq, wildcardPath, c.status)
-		} else {
-			c.status = http.StatusNotFound
-			// Error handler here
-			if r.NotFound == nil {
-				fmt.Fprintln(w, "Requested page was not found")
-			} else {
-				r.NotFound(c)
-			}
-
-		}
-
-		r.Logger(c)
-
-	})
+	http.HandleFunc("/", r.request)
 
 	log.Fatal(http.ListenAndServe(portString, nil))
+}
+
+func (r *Router) request(w http.ResponseWriter, rq *http.Request) {
+
+	path := rq.URL.Path
+	found, handlers, params := r.findRoute(path, rq.Method)
+
+	c := newContext()
+	c.writer = w
+	c.request = rq
+
+	// Handle trailing slash paths. Rename variables?
+	wildcardPath := path
+	if wildcardPath[len(wildcardPath)-1] == slash {
+		wildcardPath = wildcardPath[:len(wildcardPath)-1]
+	}
+
+	if found && len(handlers) > 0 {
+
+		c.params = Params{params}
+		c.handlers = handlers
+		c.currentHandler = 0
+		c.maxHandlers = len(handlers)
+
+		c.callByIndex(0)
+	} else if found, handler, _ := r.findRoute(wildcardPath, rq.Method); found && r.RedirectSlashes && handler != nil {
+		c.status = http.StatusMovedPermanently
+		http.Redirect(w, rq, wildcardPath, c.status)
+	} else {
+		c.status = http.StatusNotFound
+		// Error handler here
+		if r.NotFound == nil {
+			fmt.Fprintln(w, "Requested page was not found")
+		} else {
+			r.NotFound(c)
+		}
+
+	}
+	// Call the logger
+	if r.Logger != nil {
+		r.Logger(c)
+	}
 }
 
 func (r *Router) addRoute(path string, methods []string, handlers ...ResponseHandler) *Options {

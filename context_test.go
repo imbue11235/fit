@@ -41,12 +41,44 @@ func HandlerTest2(t *testing.T) ResponseHandler {
 		if testinteger != 5325 {
 			t.Errorf("Shared value did not get passed to next function, expected '%d', got '%d'.", 5325, testinteger)
 		}
+
+		// Should return false, as were calling a value that was never set
+		ok, _ := context.Shared().Get("thisdoesnotexist")
+
+		if ok {
+			t.Errorf("Should not exist. Expected '%t', got '%t'", false, ok)
+		}
 	}
 }
 
-func TestContextMiddleware(t *testing.T) {
+func TestContextMiddlewareAndShared(t *testing.T) {
 	handlers := []ResponseHandler{HandlerTest1(t), HandlerTest2(t)}
 	context.handlers = handlers
 	context.maxHandlers = len(handlers)
 	context.callByIndex(0)
+}
+
+func TestContextParameters(t *testing.T) {
+	testParams := make(map[string]string)
+	testParams["id"] = "22"
+	testParams["name"] = "John"
+	context.params = Params{testParams}
+
+	ok, id := context.Parameters().GetByName("id")
+
+	if !ok || id != "22" {
+		t.Errorf("Value for 'id' was wrong. Expected '%s', got '%s'", "22", id)
+	}
+
+	ok2, name := context.Parameters().GetByName("name")
+
+	if !ok2 || name != "John" {
+		t.Errorf("Value for 'name' was wrong. Expected '%s', got '%s'", "John", name)
+	}
+
+	exists, _ := context.Parameters().GetByName("doesnotexist")
+
+	if exists {
+		t.Error("Shouldn't be able to fetch value for 'doesnotexist'")
+	}
 }

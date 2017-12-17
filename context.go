@@ -67,6 +67,10 @@ func (c *Context) setStatus(code []int) {
 	c.writer.WriteHeader(c.status)
 }
 
+func (c *Context) Status() int {
+	return c.status
+}
+
 func (c *Context) JSON(data interface{}, status ...int) {
 	b, err := json.Marshal(data)
 
