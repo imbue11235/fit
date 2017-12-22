@@ -2,7 +2,6 @@ package fit
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -18,10 +17,6 @@ func TestRouterInitialization(t *testing.T) {
 	if router == nil {
 		t.Fatal("Router was never initialized")
 	}
-}
-
-func SomeHandler() {
-	fmt.Println("Works")
 }
 
 /* Testing the router print. Not an actual test
@@ -92,63 +87,94 @@ func TestFindingParameterizedRoute(t *testing.T) {
 	}
 }
 
+// Test router requests
+
 type testMessage struct {
-	Message string `json:"message"`
-	Article string `json:"article"`
+	Message    string   `json:"message"`
+	Parameters []string `json:"parameter"`
 }
 
-func TestSetupRouterRequest(t *testing.T) {
+type testRoute struct {
+	insertRoute          string
+	visitRoute           string
+	method               string
+	parameterIdentifiers []string
+	expectedStatus       int
+	expectedMessage      string
+	expectedParameters   []string
+}
 
-	router.addRoute("/a/route/:article", []string{"GET"}, func(c *Context) {
-		_, value := c.Parameters().GetByName("article")
+func TestRoutes(t *testing.T) {
 
-		message := testMessage{"Hey, it worked!", value}
-		c.JSON(message)
-	})
+	routes := []testRoute{
+		// Fetch - Static Routes
+		testRoute{"/", "/", "GET", nil, http.StatusOK, "Root", nil},
+		testRoute{"/photos", "/photos", "GET", nil, http.StatusOK, "You've found photos!", nil},
+
+		// Fetch - Parameterized
+		testRoute{"/photos/:id", "/photos/23", "GET", []string{"id"}, http.StatusOK, "Showing photo 23", []string{"23"}},
+
+		// Fetch - Everything
+		testRoute{"/photos/:id/comment/*all", "/photos/24/comment/asft4asf433", "GET", []string{"id", "all"}, http.StatusOK, "Showing a comment", []string{"24", "asft4asf433"}},
+
+		// Redirects - Static
+		testRoute{"", "/photos/", "GET", nil, http.StatusMovedPermanently, "You've found photos!", nil},
+
+		// Redirects - Parameterized
+		testRoute{"", "/photos/23/", "GET", []string{"id"}, http.StatusMovedPermanently, "Showing photo 23", []string{"23"}},
+		testRoute{"/comments/:id/", "/comments/57", "GET", []string{"id"}, http.StatusMovedPermanently, "Comment #57", []string{"57"}},
+
+		// 404 - Static
+
+		// 404 - Parameterized
+	}
+
+	for _, route := range routes {
+		if route.insertRoute != "" {
+			router.addRoute(route.insertRoute, []string{route.method}, func(c *Context) {
+				message := testMessage{route.expectedMessage, nil}
+				if route.expectedParameters != nil {
+					for _, param := range route.parameterIdentifiers {
+						_, val := c.Parameters().GetByName(param)
+
+						message.Parameters = append(message.Parameters, val)
+					}
+				}
+				c.JSON(message)
+			})
+		}
+		findRoute(route, t)
+	}
 
 }
 
-func TestRouterRequest(t *testing.T) {
-
-	req := httptest.NewRequest("GET", "/a/route/myarticle", nil)
+func findRoute(route testRoute, t *testing.T) {
+	req := httptest.NewRequest(route.method, route.visitRoute, nil)
 	w := httptest.NewRecorder()
 	router.request(w, req)
 
 	resp := w.Result()
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Status code is wrong. Expected %d, got %d", http.StatusOK, resp.StatusCode)
+	if resp.StatusCode != route.expectedStatus {
+		t.Errorf("Status for '%s' code is wrong. Expected %d, got %d", route.visitRoute, route.expectedStatus, resp.StatusCode)
 	}
 
 	var m testMessage
 	err := json.Unmarshal(body, &m)
-	if err == nil && m.Message != "Hey, it worked!" {
-		t.Errorf("Body is wrong. Expected '%s', got '%s'", "Hey, it worked!", m.Message)
+	if err == nil && m.Message != route.expectedMessage {
+		t.Errorf("Message in body is wrong for '%s'. Expected '%s', got '%s'", route.visitRoute, route.expectedMessage, m.Message)
 	}
 
-	if err == nil && m.Article != "myarticle" {
-		t.Errorf("Body is wrong. Expected '%s', got '%s'", "myarticle", m.Article)
-	}
-}
-
-func TestRouterRequestExtraSlash(t *testing.T) {
-
-	router.addRoute("/a/testing-route/:article", []string{"GET"}, func(c *Context) {})
-
-	req := httptest.NewRequest("GET", "/a/route/myarticle/", nil)
-	w := httptest.NewRecorder()
-	router.request(w, req)
-
-	resp := w.Result()
-
-	// If the status code is 301, we found the route, even though it had an extra slash ("/"), and are getting redirected.
-	if resp.StatusCode != http.StatusMovedPermanently {
-		t.Errorf("Status code is wrong. Expected %d, got %d", http.StatusOK, resp.StatusCode)
+	if route.expectedParameters != nil && err == nil {
+		if !reflect.DeepEqual(m.Parameters, route.expectedParameters) {
+			t.Errorf("Parameter in body is wrong for '%s'. Expected '%s', got '%s'", route.visitRoute, route.expectedParameters, m.Parameters)
+		}
 	}
 
 }
 
+/*
 func TestRouter404(t *testing.T) {
 	req := httptest.NewRequest("GET", "/a/route/myarticle/asgdsgds", nil)
 	w := httptest.NewRecorder()
@@ -165,3 +191,4 @@ func TestRouter404(t *testing.T) {
 func TestRouterLogger(t *testing.T) {
 	//router.Logger =
 }
+*/

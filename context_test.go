@@ -48,6 +48,12 @@ func HandlerTest2(t *testing.T) ResponseHandler {
 		if ok {
 			t.Errorf("Should not exist. Expected '%t', got '%t'", false, ok)
 		}
+
+		doesNextExist := c.Next()
+
+		if doesNextExist {
+			t.Errorf("There shouldn't be anymore middleware in the chain, but one was found")
+		}
 	}
 }
 

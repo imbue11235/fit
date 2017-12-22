@@ -41,28 +41,38 @@ func (r *Router) Serve(port ...int) {
 	log.Fatal(http.ListenAndServe(portString, nil))
 }
 
+// redirectPath fixes the path by either include a slash, or remove one.
+// Searches for the fixed path and returns a boolean value for the result, and the redirect path
+func (r *Router) redirectPath(path, method string) (bool, string) {
+	redirectPath := path
+	pathLength := len(redirectPath)
+	if redirectPath[pathLength-1] == slash {
+		redirectPath = redirectPath[:pathLength-1]
+	} else {
+		redirectPath += "/"
+	}
+
+	// Attempt to find the fixed route
+	found, handler, _ := r.findRoute(redirectPath, method)
+
+	return found && handler != nil, redirectPath
+}
+
 func (r *Router) request(w http.ResponseWriter, rq *http.Request) {
-
 	path := rq.URL.Path
-	found, handlers, params := r.findRoute(path, rq.Method)
 
+	found, handlers, params := r.findRoute(path, rq.Method)
 	c := newContext()
 	c.writer, c.request = w, rq
-
-	// Handle trailing slash paths. Rename variables?
-	wildcardPath := path
-	if wildcardPath[len(wildcardPath)-1] == slash {
-		wildcardPath = wildcardPath[:len(wildcardPath)-1]
-	}
 
 	if found && len(handlers) > 0 {
 
 		c.params, c.handlers, c.currentHandler, c.maxHandlers = Params{params}, handlers, 0, len(handlers)
 
 		c.callByIndex(0)
-	} else if found, handler, _ := r.findRoute(wildcardPath, rq.Method); found && r.RedirectSlashes && handler != nil {
+	} else if found, redirectPath := r.redirectPath(path, rq.Method); found && r.RedirectSlashes {
 		c.status = http.StatusMovedPermanently
-		http.Redirect(w, rq, wildcardPath, c.status)
+		http.Redirect(w, rq, redirectPath, c.status)
 	} else {
 		c.status = http.StatusNotFound
 		// Error handler here
@@ -124,7 +134,6 @@ func (r *Router) addRoute(path string, methods []string, handlers ...ResponseHan
 			}
 
 			if j < resourcePathLength {
-
 				child := res.copy()
 				child.path = res.path[j:]
 
@@ -145,10 +154,11 @@ func (r *Router) addRoute(path string, methods []string, handlers ...ResponseHan
 }
 
 func (r *Router) findRoute(path, method string) (found bool, handlers []ResponseHandler, params map[string]string) {
-
+	// TODO - Make params object instead of map
 	i, pathLength, res, params := 0, len(path), r.res, make(map[string]string)
 
 	for i < pathLength {
+
 		if len(res.prefix) == 0 {
 			return
 		}
@@ -164,16 +174,19 @@ func (r *Router) findRoute(path, method string) (found bool, handlers []Response
 			break
 		} else {
 			position := res.getIndexPosition(path[i])
+
 			if position == len(res.prefix) || res.prefix[position] != path[i] {
 				return
 			}
 			res = res.children[position]
 			position = i + len(res.path)
-			if position >= pathLength || path[i:position] != res.path {
+
+			if position > pathLength || path[i:position] != res.path {
 				return
 			}
 			i = position
 		}
+
 	}
 
 	// If regex is specified, we will run it against the parameters

@@ -83,7 +83,10 @@ func main() {
 
 	// http://localhost:<portString>/user/trump to view intended page
 	// http://localhost:<portString>/user/somerandomname to view the middleware in effect
-	router.Get("/", nil)
+	router.Get("/", func(c *fit.Context) {
+		c.JSON("Root")
+	})
+
 	router.Get("/user/:username/sa/:test", OnlyAllowUsersWithName("trump"), User).Where("username", "^[a-z]*$")
 
 	router.Get("/test/route/:id", func(c *fit.Context) {
@@ -95,6 +98,12 @@ func main() {
 		_, value := c.Parameters().GetByName("something")
 		c.JSON(Response{fmt.Sprintf("Something is %s", value)})
 	})
+
+	router.Get("/testfas", func(c *fit.Context) {
+		c.JSON(Response{fmt.Sprint("Something")})
+	})
+
+	router.PrintTree()
 
 	router.Serve(4000)
 }
