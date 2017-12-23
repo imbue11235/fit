@@ -109,7 +109,6 @@ func main() {
 		c.JSON(broken)
 	})
 
-	router.PrintTree()
-
 	router.Serve(4000)
+
 }

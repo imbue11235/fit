@@ -73,12 +73,17 @@ func (r *Router) Serve(port ...int) {
 
 	fmt.Printf("Now serving on localhost%s\n", portString)
 
-	// Binding the main request function to handle all requests made
-	// This uses the default handleFunc, and makes all the logic from the same function
-	http.HandleFunc("/", r.request)
+	// Booting the server up, using a custom wrapper
+	log.Fatal(r.listenAndServe(portString))
+}
 
-	// Booting the server up, using the standard package http.
-	log.Fatal(http.ListenAndServe(portString, nil))
+// listenAndServe custom instance of the http.Server struct, to enable graceful shutdown
+// TODO: Create a listener, to enabling closing of the server again later => https://play.golang.org/p/-G7nJlH_Mz
+func (r *Router) listenAndServe(address string) error {
+	// Binding the main request function to handle all requests made
+	server := &http.Server{Addr: address, Handler: http.HandlerFunc(r.request)}
+
+	return server.ListenAndServe()
 }
 
 // redirectPath fixes the path by either include a slash, or remove one.

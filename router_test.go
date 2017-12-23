@@ -195,7 +195,7 @@ func TestRouteRegex(t *testing.T) {
 	findRoute(multiParameterRoute, t)
 
 	multiParameterRoute.expectedStatus = http.StatusNotFound
-	multiParameterRoute.visitRoute = "/regex/23464/user/john400"
+	multiParameterRoute.visitRoute = "/regex/23464/user/john400" // Changing name to contain digits too, which is not allowed
 	multiParameterRoute.expectedParameters = nil
 	multiParameterRoute.expectedMessage = fourOhFourMessage
 
