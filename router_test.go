@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	router = NewRouter()
+	router            = NewRouter()
+	fourOhFourMessage = "The URL you've requested was not found."
 )
 
 func TestRouterInitialization(t *testing.T) {
@@ -113,6 +114,7 @@ func TestRoutes(t *testing.T) {
 
 		// Fetch - Parameterized
 		testRoute{"/photos/:id", "/photos/23", "GET", []string{"id"}, http.StatusOK, "Showing photo 23", []string{"23"}},
+		testRoute{"/photos/:id/by/:author", "/photos/77/by/hanzel", "GET", []string{"id", "author"}, http.StatusOK, "Showing photo 77 by Hanzel", []string{"77", "hanzel"}},
 
 		// Fetch - Everything
 		testRoute{"/photos/:id/comment/*all", "/photos/24/comment/asft4asf433", "GET", []string{"id", "all"}, http.StatusOK, "Showing a comment", []string{"24", "asft4asf433"}},
@@ -125,9 +127,10 @@ func TestRoutes(t *testing.T) {
 		testRoute{"/comments/:id/", "/comments/57", "GET", []string{"id"}, http.StatusMovedPermanently, "Comment #57", []string{"57"}},
 
 		// 404 - Static
-		testRoute{"", "/photoas/", "GET", nil, http.StatusNotFound, "The URL you've requested was not found.", nil},
+		testRoute{"", "/photoas/", "GET", nil, http.StatusNotFound, fourOhFourMessage, nil},
 
 		// 404 - Parameterized
+		testRoute{"", "/photos/44/comments", "GET", nil, http.StatusNotFound, fourOhFourMessage, nil},
 
 		// 500 - Invalid JSON
 		testRoute{"/invalid-json", "/invalid-json", "GET", nil, http.StatusInternalServerError, make(chan int), nil},
@@ -152,6 +155,54 @@ func TestRoutes(t *testing.T) {
 
 }
 
+func TestRouteRegex(t *testing.T) {
+	singleParameterRoute := testRoute{"/regex/:id", "/regex/23464", "GET", []string{"id"}, http.StatusOK, "", []string{"23464"}}
+	router.Get(singleParameterRoute.insertRoute, func(c *Context) {
+		message := testMessage{singleParameterRoute.expectedMessage, nil}
+		if singleParameterRoute.expectedParameters != nil {
+			for _, param := range singleParameterRoute.parameterIdentifiers {
+				_, val := c.Parameters().GetByName(param)
+
+				message.Parameters = append(message.Parameters, val)
+			}
+		}
+		c.JSON(message)
+	}).Where("id", "^[0-9]*$")
+
+	findRoute(singleParameterRoute, t)
+	// Changing to letters to test regex
+	singleParameterRoute.expectedStatus = http.StatusNotFound
+	singleParameterRoute.visitRoute = "/regex/d23fds23"
+	singleParameterRoute.expectedParameters = nil
+	singleParameterRoute.expectedMessage = fourOhFourMessage
+
+	findRoute(singleParameterRoute, t)
+
+	multiParameterRoute := testRoute{"/regex-multi/:id/user/:name", "/regex-multi/23464/user/gretchel", "GET", []string{"id", "name"}, http.StatusOK, "", []string{"23464", "gretchel"}}
+
+	router.Get(multiParameterRoute.insertRoute, func(c *Context) {
+		message := testMessage{multiParameterRoute.expectedMessage, nil}
+		if multiParameterRoute.expectedParameters != nil {
+			for _, param := range multiParameterRoute.parameterIdentifiers {
+				_, val := c.Parameters().GetByName(param)
+
+				message.Parameters = append(message.Parameters, val)
+			}
+		}
+		c.JSON(message)
+	}).Where("id", "^[0-9]*$", "name", "^[a-z]*$")
+
+	findRoute(multiParameterRoute, t)
+
+	multiParameterRoute.expectedStatus = http.StatusNotFound
+	multiParameterRoute.visitRoute = "/regex/23464/user/john400"
+	multiParameterRoute.expectedParameters = nil
+	multiParameterRoute.expectedMessage = fourOhFourMessage
+
+	findRoute(multiParameterRoute, t)
+}
+
+// Helper for finding route
 func findRoute(route testRoute, t *testing.T) {
 	req := httptest.NewRequest(route.method, route.visitRoute, nil)
 	w := httptest.NewRecorder()
@@ -177,22 +228,3 @@ func findRoute(route testRoute, t *testing.T) {
 	}
 
 }
-
-/*
-func TestRouter404(t *testing.T) {
-	req := httptest.NewRequest("GET", "/a/route/myarticle/asgdsgds", nil)
-	w := httptest.NewRecorder()
-	router.request(w, req)
-
-	resp := w.Result()
-
-	if resp.StatusCode != http.StatusNotFound {
-		t.Errorf("Status code is wrong. Expected %d, got %d", http.StatusOK, resp.StatusCode)
-	}
-
-}
-
-func TestRouterLogger(t *testing.T) {
-	//router.Logger =
-}
-*/

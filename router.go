@@ -17,13 +17,32 @@ const (
 type Router struct {
 	res *resource
 
+	before []ResponseHandler
+	after  []ResponseHandler
+	logger ResponseHandler
+
 	NotFound        ResponseHandler
-	Logger          ResponseHandler
 	RedirectSlashes bool
 }
 
 func NewRouter() *Router {
-	return &Router{newResource(), notFoundHandler(), nil, true}
+	return &Router{newResource(), nil, nil, nil, notFoundHandler(), true}
+}
+
+// Before appends handler(s) before all other handlers, globally for the instance of the router
+func (r *Router) Before(handlers ...ResponseHandler) {
+	r.before = append(r.before, handlers...)
+}
+
+// After appends handler(s) after all other handlers, globally for the instance of the router
+func (r *Router) After(handlers ...ResponseHandler) {
+	r.after = append(r.after, handlers...)
+}
+
+// Logger to use. Did works the same way as the other ResponseHandlers, except it does not exist
+// in the middleware chain, and is being called even though next was never called
+func (r *Router) Logger(logger ResponseHandler) {
+	r.logger = logger
 }
 
 // Serve ..
@@ -66,8 +85,19 @@ func (r *Router) request(w http.ResponseWriter, rq *http.Request) {
 	c.writer, c.request = w, rq
 
 	if found && len(handlers) > 0 {
+		handlerChain := []ResponseHandler{}
 
-		c.params, c.handlers, c.currentHandler, c.maxHandlers = Params{params}, handlers, 0, len(handlers)
+		if r.before != nil {
+			handlerChain = append(handlerChain, r.before...)
+		}
+
+		handlerChain = append(handlerChain, handlers...)
+
+		if r.after != nil {
+			handlerChain = append(handlerChain, r.after...)
+		}
+
+		c.params, c.handlers, c.currentHandler, c.maxHandlers = Params{params}, handlerChain, 0, len(handlerChain)
 
 		c.callByIndex(0)
 	} else if found, redirectPath := r.redirectPath(path, rq.Method); found && r.RedirectSlashes {
@@ -83,10 +113,11 @@ func (r *Router) request(w http.ResponseWriter, rq *http.Request) {
 		}
 
 	}
-	// Call the logger
-	if r.Logger != nil {
-		r.Logger(c)
+
+	if r.logger != nil {
+		r.logger(c)
 	}
+
 }
 
 func (r *Router) addRoute(path string, methods []string, handlers ...ResponseHandler) *Options {

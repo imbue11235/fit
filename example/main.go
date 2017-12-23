@@ -81,7 +81,7 @@ func OnlyAllowUsersWithName(username string) fit.ResponseHandler {
 func main() {
 	router := fit.NewRouter()
 
-	router.Logger = DefaultLogger()
+	router.Logger(DefaultLogger())
 
 	// http://localhost:<portString>/user/trump to view intended page
 	// http://localhost:<portString>/user/somerandomname to view the middleware in effect
@@ -94,6 +94,8 @@ func main() {
 	router.Get("/test/route/:id", func(c *fit.Context) {
 		_, value := c.Parameters().GetByName("id")
 		c.JSON(Response{fmt.Sprintf("Id is %s and apikey is %s", value, c.Request().FormValue("apikey"))})
+
+		c.Next()
 	})
 
 	router.Get("/test/route-test/*something", func(c *fit.Context) {
@@ -106,6 +108,8 @@ func main() {
 
 		c.JSON(broken)
 	})
+
+	router.PrintTree()
 
 	router.Serve(4000)
 }

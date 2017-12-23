@@ -25,7 +25,7 @@ func find(src string, target byte, start int, pathLength int) int {
 
 func (r *Router) PrintTree() {
 	res := r.res
-	printResource(res, 0, false)
+	printResource(res, 1, false)
 }
 
 func printResource(res *resource, amount int, pre bool) {

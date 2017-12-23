@@ -1,6 +1,7 @@
 package fit
 
 import (
+	"net/http"
 	"testing"
 )
 
@@ -86,5 +87,13 @@ func TestContextParameters(t *testing.T) {
 
 	if exists {
 		t.Error("Shouldn't be able to fetch value for 'doesnotexist'")
+	}
+}
+
+func TestContextStatus(t *testing.T) {
+	context.status = http.StatusTeapot
+
+	if context.Status() != http.StatusTeapot {
+		t.Errorf("Status is not correct, expected %d, got %d", http.StatusTeapot, context.Status())
 	}
 }
