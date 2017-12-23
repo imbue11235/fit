@@ -68,8 +68,9 @@ func printResource(res *resource, amount int, pre bool) {
 func notFoundHandler() ResponseHandler {
 
 	return func(c *Context) {
-		response := make(map[string]string)
-		response["message"] = "The URL you requested was not found."
+		response := map[string]string{
+			"message": "The URL you've requested was not found.",
+		}
 		c.JSON(response, http.StatusNotFound)
 	}
 }

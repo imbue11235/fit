@@ -90,8 +90,8 @@ func TestFindingParameterizedRoute(t *testing.T) {
 // Test router requests
 
 type testMessage struct {
-	Message    string   `json:"message"`
-	Parameters []string `json:"parameter"`
+	Message    interface{} `json:"message"`
+	Parameters []string    `json:"parameter"`
 }
 
 type testRoute struct {
@@ -100,7 +100,7 @@ type testRoute struct {
 	method               string
 	parameterIdentifiers []string
 	expectedStatus       int
-	expectedMessage      string
+	expectedMessage      interface{}
 	expectedParameters   []string
 }
 
@@ -125,8 +125,12 @@ func TestRoutes(t *testing.T) {
 		testRoute{"/comments/:id/", "/comments/57", "GET", []string{"id"}, http.StatusMovedPermanently, "Comment #57", []string{"57"}},
 
 		// 404 - Static
+		testRoute{"", "/photoas/", "GET", nil, http.StatusNotFound, "The URL you've requested was not found.", nil},
 
 		// 404 - Parameterized
+
+		// 500 - Invalid JSON
+		testRoute{"/invalid-json", "/invalid-json", "GET", nil, http.StatusInternalServerError, make(chan int), nil},
 	}
 
 	for _, route := range routes {

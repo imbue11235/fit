@@ -27,10 +27,12 @@ func DefaultLogger() fit.ResponseHandler {
 
 	return func(c *fit.Context) {
 		statusColor, status := color.BgGreen, c.Status()
-
-		if status == http.StatusNotFound {
+		switch {
+		case status >= 300 && status < 400:
+			statusColor = color.BgHiBlue
+		case status >= 400 && status < 500:
 			statusColor = color.BgYellow
-		} else if status != http.StatusOK {
+		case status >= 500:
 			statusColor = color.BgRed
 		}
 
@@ -99,11 +101,11 @@ func main() {
 		c.JSON(Response{fmt.Sprintf("Something is %s", value)})
 	})
 
-	router.Get("/testfas", func(c *fit.Context) {
-		c.JSON(Response{fmt.Sprint("Something")})
-	})
+	router.Get("/broken-json", func(c *fit.Context) {
+		broken := make(chan int)
 
-	router.PrintTree()
+		c.JSON(broken)
+	})
 
 	router.Serve(4000)
 }

@@ -94,8 +94,10 @@ func (c *Context) JSON(data interface{}, status ...int) {
 	b, err := json.Marshal(data)
 
 	if err != nil {
-		c.writer.WriteHeader(http.StatusInternalServerError)
+		c.setStatus(http.StatusInternalServerError)
 		c.writer.Write([]byte(err.Error()))
+
+		return
 	}
 
 	c.setStatus(status...)
