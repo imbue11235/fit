@@ -15,18 +15,36 @@ const (
 
 // Router ...
 type Router struct {
+	// Resource tree for the assigned routes
 	res *resource
 
+	// Contains ResponseHandler(s) called before the handlers assigned on the route
 	before []ResponseHandler
-	after  []ResponseHandler
+
+	// Contains ResponseHandler(s) called after the handlers assigned on the route
+	after []ResponseHandler
+
+	// Contains a ResponseHandler called after everything, not dependent of the middleware chain
 	logger ResponseHandler
 
-	NotFound        ResponseHandler
+	// Contains the default function to use when a page was not found (404)
+	NotFound ResponseHandler
+
+	// A boolean value for toggling automatic redirects, if the route exists with (or without) slashes "/"
 	RedirectSlashes bool
 }
 
+// NewRouter returns a new instance of the Router struct.
+// It's created with an empty resource and a standard not found handler for 404 requests.
 func NewRouter() *Router {
-	return &Router{newResource(), nil, nil, nil, notFoundHandler(), true}
+	return &Router{
+		newResource(),     // Resource creation
+		nil,               // Before ResponseHandler(s)
+		nil,               // After ResponseHandler(s)
+		nil,               // Logger ResponseHandler
+		notFoundHandler(), // Default not found handler
+		true,              // RedirectSlashes is activated pr. default
+	}
 }
 
 // Before appends handler(s) before all other handlers, globally for the instance of the router
@@ -47,7 +65,7 @@ func (r *Router) Logger(logger ResponseHandler) {
 
 // Serve ..
 func (r *Router) Serve(port ...int) {
-	// Default port
+	// Setting the default port, as we're using variadic variables, to make it possible to use Serve() parameterless
 	portString := ":8080"
 	if len(port) > 0 {
 		portString = fmt.Sprintf(":%d", port[0])
@@ -55,8 +73,11 @@ func (r *Router) Serve(port ...int) {
 
 	fmt.Printf("Now serving on localhost%s\n", portString)
 
+	// Binding the main request function to handle all requests made
+	// This uses the default handleFunc, and makes all the logic from the same function
 	http.HandleFunc("/", r.request)
 
+	// Booting the server up, using the standard package http.
 	log.Fatal(http.ListenAndServe(portString, nil))
 }
 

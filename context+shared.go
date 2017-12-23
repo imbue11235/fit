@@ -12,12 +12,9 @@ func (c *Context) Shared() Shared {
 	return c.shared
 }
 
-func (s Shared) Get(key string) (bool, interface{}) {
-	if k, ok := s.values[key]; ok {
-		return true, k
-	}
-
-	return false, ""
+func (s Shared) Get(key string) (ok bool, value interface{}) {
+	value, ok = s.values[key]
+	return
 }
 
 func (s Shared) Set(key string, value interface{}) {
