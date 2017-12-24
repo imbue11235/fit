@@ -109,31 +109,31 @@ func TestRoutes(t *testing.T) {
 
 	routes := []testRoute{
 		// Fetch - Static Routes
-		testRoute{"/", "/", "GET", nil, http.StatusOK, "Root", nil},
-		testRoute{"/photos", "/photos", "GET", nil, http.StatusOK, "You've found photos!", nil},
+		{"/", "/", "GET", nil, http.StatusOK, "Root", nil},
+		{"/photos", "/photos", "GET", nil, http.StatusOK, "You've found photos!", nil},
 
 		// Fetch - Parameterized
-		testRoute{"/photos/:id", "/photos/23", "GET", []string{"id"}, http.StatusOK, "Showing photo 23", []string{"23"}},
-		testRoute{"/photos/:id/by/:author", "/photos/77/by/hanzel", "GET", []string{"id", "author"}, http.StatusOK, "Showing photo 77 by Hanzel", []string{"77", "hanzel"}},
+		{"/photos/:id", "/photos/23", "GET", []string{"id"}, http.StatusOK, "Showing photo 23", []string{"23"}},
+		{"/photos/:id/by/:author", "/photos/77/by/hanzel", "GET", []string{"id", "author"}, http.StatusOK, "Showing photo 77 by Hanzel", []string{"77", "hanzel"}},
 
 		// Fetch - Everything
-		testRoute{"/photos/:id/comment/*all", "/photos/24/comment/asft4asf433", "GET", []string{"id", "all"}, http.StatusOK, "Showing a comment", []string{"24", "asft4asf433"}},
+		{"/photos/:id/comment/*all", "/photos/24/comment/asft4asf433", "GET", []string{"id", "all"}, http.StatusOK, "Showing a comment", []string{"24", "asft4asf433"}},
 
 		// Redirects - Static
-		testRoute{"", "/photos/", "GET", nil, http.StatusMovedPermanently, "You've found photos!", nil},
+		{"", "/photos/", "GET", nil, http.StatusMovedPermanently, "You've found photos!", nil},
 
 		// Redirects - Parameterized
-		testRoute{"", "/photos/23/", "GET", []string{"id"}, http.StatusMovedPermanently, "Showing photo 23", []string{"23"}},
-		testRoute{"/comments/:id/", "/comments/57", "GET", []string{"id"}, http.StatusMovedPermanently, "Comment #57", []string{"57"}},
+		{"", "/photos/23/", "GET", []string{"id"}, http.StatusMovedPermanently, "Showing photo 23", []string{"23"}},
+		{"/comments/:id/", "/comments/57", "GET", []string{"id"}, http.StatusMovedPermanently, "Comment #57", []string{"57"}},
 
 		// 404 - Static
-		testRoute{"", "/photoas/", "GET", nil, http.StatusNotFound, fourOhFourMessage, nil},
+		{"", "/photoas/", "GET", nil, http.StatusNotFound, fourOhFourMessage, nil},
 
 		// 404 - Parameterized
-		testRoute{"", "/photos/44/comments", "GET", nil, http.StatusNotFound, fourOhFourMessage, nil},
+		{"", "/photos/44/comments", "GET", nil, http.StatusNotFound, fourOhFourMessage, nil},
 
 		// 500 - Invalid JSON
-		testRoute{"/invalid-json", "/invalid-json", "GET", nil, http.StatusInternalServerError, make(chan int), nil},
+		{"/invalid-json", "/invalid-json", "GET", nil, http.StatusInternalServerError, make(chan int), nil},
 	}
 
 	for _, route := range routes {
