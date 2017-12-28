@@ -1,18 +1,25 @@
 package fit
 
-type Params struct {
-	params map[string]string
+type Parameters struct {
+	stack []parameter
+}
+
+type parameter struct {
+	key   string
+	value string
 }
 
 // Parameters ....
-func (c *Context) Parameters() Params {
+func (c *Context) Parameters() Parameters {
 	return c.params
 }
 
 // GetByName ....
-func (p Params) GetByName(name string) (bool, string) {
-	if param, ok := p.params[name]; ok {
-		return true, param
+func (p Parameters) GetByName(name string) (bool, string) {
+	for _, parameter := range p.stack {
+		if parameter.key == name {
+			return true, parameter.value
+		}
 	}
 	return false, ""
 }

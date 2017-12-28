@@ -28,7 +28,7 @@ type Context struct {
 	status int
 
 	// Struct for handling the parameters set, if any.
-	params Params
+	params Parameters
 
 	// Shared for handling shared values between middleware(s)
 	shared Shared

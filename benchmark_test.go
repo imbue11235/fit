@@ -1,7 +1,6 @@
 package fit
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -40,9 +39,7 @@ func TestMain(m *testing.M) {
 
 func insertRoutesForTesting() {
 	for _, route := range googlePlusAPI {
-		benchmarkRouter.addRoute(route.path, []string{route.method}, func(c *Context) {
-			fmt.Println(route.path)
-		})
+		benchmarkRouter.addRoute(route.path, []string{route.method}, nil)
 	}
 }
 
@@ -72,7 +69,7 @@ func BenchmarkFindCatchAllRoute(b *testing.B) {
 	benchmarkFind("/custom/some-custom-string", "GET", b)
 }
 
-func BenchmarkAll(b *testing.B) {
+func BenchmarkFindAllRoutes(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		for _, route := range googlePlusAPI {
 			benchmarkRouter.findRoute(route.visit, route.method)

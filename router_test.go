@@ -79,9 +79,12 @@ func TestFindingParameterizedRoute(t *testing.T) {
 	if !found {
 		t.Errorf("Expected to get %t but got %t", true, found)
 	} else {
-		expectedParams := make(map[string]string)
-		expectedParams["this"] = "something"
-		expectedParams["withid"] = "23"
+		expectedParams := Parameters{
+			[]parameter{
+				{"this", "something"},
+				{"withid", "23"},
+			},
+		}
 		if !reflect.DeepEqual(expectedParams, params) {
 			t.Errorf("Expected to find params %s, found %s", expectedParams, params)
 		}

@@ -66,10 +66,10 @@ func TestContextMiddlewareAndShared(t *testing.T) {
 }
 
 func TestContextParameters(t *testing.T) {
-	testParams := make(map[string]string)
-	testParams["id"] = "22"
-	testParams["name"] = "John"
-	context.params = Params{testParams}
+	testParams := make([]parameter, 2)
+	testParams = append(testParams, parameter{"id", "22"})
+	testParams = append(testParams, parameter{"name", "John"})
+	context.params = Parameters{testParams}
 
 	ok, id := context.Parameters().GetByName("id")
 

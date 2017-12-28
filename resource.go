@@ -6,6 +6,7 @@ type resource struct {
 	prefix   string
 	children []*resource
 	options  *Options
+	max      int
 }
 
 // Helper functions

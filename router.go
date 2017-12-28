@@ -106,7 +106,7 @@ func (r *Router) redirectPath(path, method string) (bool, string) {
 func (r *Router) request(w http.ResponseWriter, rq *http.Request) {
 	path := rq.URL.Path
 
-	found, handlers, params := r.findRoute(path, rq.Method)
+	found, handlers, parameters := r.findRoute(path, rq.Method)
 	c := newContext()
 	c.writer, c.request = w, rq
 
@@ -123,7 +123,7 @@ func (r *Router) request(w http.ResponseWriter, rq *http.Request) {
 			handlerChain = append(handlerChain, r.after...)
 		}
 
-		c.params, c.handlers, c.currentHandler, c.maxHandlers = Params{params}, handlerChain, 0, len(handlerChain)
+		c.params, c.handlers, c.currentHandler, c.maxHandlers = parameters, handlerChain, 0, len(handlerChain)
 
 		c.callByIndex(0)
 	} else if found, redirectPath := r.redirectPath(path, rq.Method); found && r.RedirectSlashes {
@@ -147,7 +147,7 @@ func (r *Router) request(w http.ResponseWriter, rq *http.Request) {
 }
 
 func (r *Router) addRoute(path string, methods []string, handlers ...ResponseHandler) *Options {
-	i, pathLength, res, options := 0, len(path), r.res, &Options{path: path}
+	i, pathLength, res, options, max := 0, len(path), r.res, &Options{path: path}, 0
 
 	for i < pathLength {
 		position := res.getIndexPosition(path[i])
@@ -159,6 +159,7 @@ func (r *Router) addRoute(path string, methods []string, handlers ...ResponseHan
 
 				if position < pathLength {
 					res = res.insertChild(star, newResourceFromPath(path[position+1:]))
+					max++
 				}
 
 				res.addMethods(methods, options, handlers...)
@@ -168,6 +169,7 @@ func (r *Router) addRoute(path string, methods []string, handlers ...ResponseHan
 			res = res.insertChild(path[i], newResourceFromPath(path[i:position]))
 			i = find(path, slash, position, pathLength)
 			res = res.insertChild(colon, newResourceFromPath(path[position+1:i]))
+			max++
 
 			if i == pathLength {
 				res.addMethods(methods, options, handlers...)
@@ -176,6 +178,7 @@ func (r *Router) addRoute(path string, methods []string, handlers ...ResponseHan
 		} else if path[i] == colon {
 			res = res.children[0]
 			i += len(res.path) + 1
+			max++
 
 			if i == pathLength {
 				res.addMethods(methods, options, handlers...)
@@ -207,12 +210,25 @@ func (r *Router) addRoute(path string, methods []string, handlers ...ResponseHan
 			}
 		}
 	}
+
+	if r.res.max < max {
+		r.res.max = max
+	}
+
 	return options
 }
 
-func (r *Router) findRoute(path, method string) (found bool, handlers []ResponseHandler, params map[string]string) {
+func (r *Router) appendParameter(parameters *Parameters, key, value string) {
+	if parameters.stack == nil {
+		parameters.stack = make([]parameter, 0, r.res.max)
+	}
+
+	parameters.stack = append(parameters.stack, parameter{key, value})
+}
+
+func (r *Router) findRoute(path, method string) (found bool, handlers []ResponseHandler, parameters Parameters) {
 	// TODO - Make params object instead of map
-	i, pathLength, res, params := 0, len(path), r.res, make(map[string]string)
+	i, pathLength, res, parameters := 0, len(path), r.res, Parameters{}
 
 	for i < pathLength {
 
@@ -223,11 +239,11 @@ func (r *Router) findRoute(path, method string) (found bool, handlers []Response
 		if res.prefix[0] == colon {
 			res = res.children[0]
 			position := find(path, slash, i, len(path))
-			params[res.path] = path[i:position]
+			r.appendParameter(&parameters, res.path, path[i:position])
 			i = position
 		} else if res.prefix[0] == star {
 			res = res.children[0]
-			params[res.path] = path[i:]
+			r.appendParameter(&parameters, res.path, path[i:])
 			break
 		} else {
 			position := res.getIndexPosition(path[i])
@@ -249,7 +265,7 @@ func (r *Router) findRoute(path, method string) (found bool, handlers []Response
 	// If regex is specified, we will run it against the parameters
 	if res.options.regex != nil {
 		for name, constraint := range res.options.regex {
-			if param, ok := params[name]; ok {
+			if ok, param := parameters.GetByName(name); ok {
 				validRoute := regexp.MustCompile(constraint)
 				if !validRoute.MatchString(param) {
 					// Not found
@@ -259,5 +275,5 @@ func (r *Router) findRoute(path, method string) (found bool, handlers []Response
 		}
 	}
 
-	return true, res.methods[method], params
+	return true, res.methods[method], parameters
 }
