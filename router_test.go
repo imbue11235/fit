@@ -20,24 +20,6 @@ func TestRouterInitialization(t *testing.T) {
 	}
 }
 
-/* Testing the router print. Not an actual test
-func TestRoutePrinting(t *testing.T) {
-
-	router.addRoute("/", []string{"GET"})
-	router.addRoute("/test", []string{"GET"})
-	router.addRoute("/team", []string{"GET"})
-
-	router.addRoute("/teammate", []string{"GET"})
-	router.addRoute("/teammate", []string{"POST"})
-	router.addRoute("/testable", []string{"GET"})
-	router.addRoute("/testamonials/:id", []string{"GET"})
-	router.addRoute("/testamonials/:id/something/:anotherid", []string{"GET"})
-	router.addRoute("/testamonials/:id/somethang/:anotherid", []string{"GET"})
-
-	router.PrintTree()
-}
-*/
-
 func TestInsertion(t *testing.T) {
 	path := "/some/testing/path"
 	router.addRoute(path, nil)

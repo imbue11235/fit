@@ -1,18 +1,19 @@
 package main
 
 import (
-	fit "fit_router"
 	"fmt"
 	"net/http"
 	"strings"
+
+	fit "github.com/imbue11235/fit"
 
 	"github.com/fatih/color"
 )
 
 type Message struct {
-	Username string `json:"username"`
-	APIToken string `json:"api_token"`
-	Message  string `json:"message"`
+	Username    string `json:"username"`
+	SharedValue string `json:"shared_value"`
+	Message     string `json:"message"`
 }
 
 type Response struct {
@@ -54,7 +55,7 @@ func DefaultLogger() fit.ResponseHandler {
 
 // User - Example endpoint function
 func User(c *fit.Context) {
-	_, apiToken := c.Shared().Get("api_token")
+	_, apiToken := c.Shared().Get("shared_value")
 	_, username := c.Parameters().GetByName("username")
 	m := Message{username, apiToken.(string), fmt.Sprintf("You are allowed to view this page, because your name is '%s'.", username)}
 
@@ -72,7 +73,7 @@ func OnlyAllowUsersWithName(username string) fit.ResponseHandler {
 			return
 		}
 
-		c.Shared().Set("api_token", "some_api_token")
+		c.Shared().Set("shared_value", "some shared value")
 
 		c.Next()
 	}
@@ -89,7 +90,7 @@ func main() {
 		c.JSON("Root")
 	})
 
-	router.Get("/user/:username/sa/:test", OnlyAllowUsersWithName("trump"), User).Where("username", "^[a-z]*$")
+	router.Get("/user/:username", OnlyAllowUsersWithName("brian"), User).Where("username", "^[a-z]*$")
 
 	router.Get("/test/route/:id", func(c *fit.Context) {
 		_, value := c.Parameters().GetByName("id")
@@ -110,5 +111,4 @@ func main() {
 	})
 
 	router.Serve(4000)
-
 }

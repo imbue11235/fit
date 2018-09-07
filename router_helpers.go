@@ -6,13 +6,17 @@ import (
 	"strings"
 )
 
-// Route helpers
+// Get - helper method for adding routes accessible via get method
 func (r *Router) Get(path string, handlers ...ResponseHandler) *Options {
 	return r.addRoute(path, []string{"GET"}, handlers...)
 }
 
-// Route find
+// Post - helper method for adding routes accessible via post method
+func (r *Router) Post(path string, handlers ...ResponseHandler) *Options {
+	return r.addRoute(path, []string{"POST"}, handlers...)
+}
 
+// Route find
 func find(src string, target byte, start int, pathLength int) int {
 	i := start
 
@@ -21,8 +25,7 @@ func find(src string, target byte, start int, pathLength int) int {
 	return i
 }
 
-// Route print tree
-
+// Print tree - prints the radix tree
 func (r *Router) PrintTree() {
 	res := r.res
 	printResource(res, 1, false)

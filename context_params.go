@@ -23,5 +23,3 @@ func (p Parameters) GetByName(name string) (bool, string) {
 	}
 	return false, ""
 }
-
-// Get by int?

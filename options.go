@@ -19,7 +19,6 @@ func (r *Options) Where(constraints ...string) *Options {
 	}
 
 	if constraintLength%2 != 0 {
-		// TODO: What does this mean?
 		panic("Constraint is missing")
 	}
 
